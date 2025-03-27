@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+requests # To make HTTP requests to the backend
+jinja2 # For HTML templating

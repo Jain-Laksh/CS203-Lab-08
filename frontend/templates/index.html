@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elasticsearch Frontend</title>
+    <style>
+        body { font-family: sans-serif; }
+        #output, #insert-output { margin-top: 15px; padding: 10px; border: 1px solid #ccc; min-height: 50px; white-space: pre-wrap; } /* Use pre-wrap to respect newlines */
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], textarea { width: 80%; margin-bottom: 10px; padding: 5px;}
+        button { padding: 8px 15px; margin-right: 10px;}
+        textarea { height: 100px; }
+    </style>
+</head>
+<body>
+
+    <h1>Elasticsearch Simple Frontend</h1>
+
+    <hr>
+
+    <h2>Search for Best Match</h2>
+    <label for="searchQuery">Enter Search Term:</label>
+    <input type="text" id="searchQuery" name="searchQuery">
+    <button onclick="getBestMatch()">Get Best Match</button>
+
+    <h3>Search Result:</h3>
+    <div id="output">Output will be shown here...</div>
+
+    <hr>
+
+    <h2>Insert Document</h2>
+    <label for="insertData">Enter Document Text:</label>
+    <textarea id="insertData" name="insertData"></textarea>
+    <button onclick="insertDocument()">Insert Document</button>
+
+     <h3>Insert Result:</h3>
+    <div id="insert-output">Insert status will be shown here...</div>
+
+
+    <script>
+        // Use the service name 'backend' and the port it listens on INSIDE docker
+        const BACKEND_URL = "http://localhost:9567"; // This script runs in the browser, talking to the *exposed* frontend port
+
+        async function getBestMatch() {
+            const query = document.getElementById('searchQuery').value;
+            const outputDiv = document.getElementById('output');
+            outputDiv.textContent = 'Searching...';
+
+            try {
+                // The frontend's Python code will proxy this request to the actual backend service
+                const response = await fetch('/get_best_match', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (result.message === "No documents found") {
+                        outputDiv.textContent = "No documents found.";
+                    } else {
+                        outputDiv.textContent = `ID: ${result.id}\nScore: ${result.score}\nText: ${result.text}`;
+                    }
+                } else {
+                     outputDiv.textContent = `Error: ${result.detail || response.statusText}`;
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                outputDiv.textContent = 'Failed to fetch data. Check console for details. Is the backend running?';
+            }
+        }
+
+        async function insertDocument() {
+            const text = document.getElementById('insertData').value;
+            const outputDiv = document.getElementById('insert-output');
+            outputDiv.textContent = 'Inserting...';
+
+             try {
+                 // The frontend's Python code will proxy this request to the actual backend service
+                const response = await fetch('/insert_document', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                     outputDiv.textContent = `Success: ${result.message} (ID: ${result.id})`;
+                     document.getElementById('insertData').value = ''; // Clear textarea on success
+                } else {
+                     outputDiv.textContent = `Error: ${result.detail || response.statusText}`;
+                }
+            } catch (error) {
+                console.error('Error inserting document:', error);
+                outputDiv.textContent = 'Failed to insert document. Check console for details. Is the backend running?';
+            }
+        }
+    </script>
+
+</body>
+</html>

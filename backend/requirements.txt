@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+elasticsearch[async] # <-- Add [async] here
+requests

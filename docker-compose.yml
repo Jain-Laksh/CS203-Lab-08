@@ -1,0 +1,48 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.27 
+    container_name: elasticsearch_cont
+    environment:
+      - discovery.type=single-node 
+      - xpack.security.enabled=false 
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m 
+   
+    volumes:
+      - esdata:/usr/share/elasticsearch/data 
+    networks:
+      - app-network 
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:9200/_cat/health >/dev/null || exit 1"]
+      interval: 10s  
+      timeout: 5s   
+      retries: 5    
+      start_period: 30s 
+
+  backend:
+    build: ./backend 
+    container_name: backend_cont
+    depends_on:
+       elasticsearch: 
+         condition: service_healthy 
+      
+    networks:
+      - app-network 
+ 
+  frontend:
+    build: ./frontend 
+    container_name: frontend_cont
+    depends_on:
+      - backend 
+    ports:
+      - "9567:9567" 
+    networks:
+      - app-network
+    environment: 
+      - BACKEND_URL=http://backend:9567 
+
+volumes:
+  esdata: 
+
+networks:
+  app-network: 
+    driver: bridge
